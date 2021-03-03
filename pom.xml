@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mandrillapp.wrapper.lutung</groupId>
-    <artifactId>lutung</artifactId>
-    <version>0.0.9-SNAPSHOT</version>
-    <name>lutung</name>
+    <artifactId>goji-lutung</artifactId>
+    <version>0.0.10</version>
+    <name>goji-lutung</name>
     <description>Mandrill API Client for Java</description>
     <url>https://github.com/rschreijer/lutung</url>
     <inceptionYear>2013</inceptionYear>
@@ -28,14 +29,14 @@
             <email>yukyuk@gmx.com</email>
         </developer>
     </developers>
-	<parent>
-		<groupId>org.sonatype.oss</groupId>
-		<artifactId>oss-parent</artifactId>
-		<version>7</version>
-	</parent>
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
 
     <properties>
-        <java-version>1.6</java-version>
+        <java-version>1.8</java-version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -79,8 +80,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -88,56 +89,25 @@
 
     <profiles>
         <profile>
-            <id>release</id>
+            <id>goji--goji</id>
             <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>2.4.1</version>
-                        <configuration>
-                            <arguments>-Dgpg.passphrase=${gpg.passphrase}</arguments>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
-                        <configuration>
-                            <passphrase>${gpg.passphrase}</passphrase>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <repositories>
+                <repository>
+                    <id>goji--goji</id>
+                    <url>https://goji-685080952320.d.codeartifact.eu-west-1.amazonaws.com/maven/goji/</url>
+                </repository>
+            </repositories>
         </profile>
     </profiles>
 
+
     <distributionManagement>
-        <!-- Sonatype repo info -->
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus snapshot repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
         <repository>
-            <id>sonatype-nexus-staging</id>
-            <name>Sonatype Nexus release repository</name>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>goji--goji</id>
+            <name>goji--goji</name>
+            <url>https://goji-685080952320.d.codeartifact.eu-west-1.amazonaws.com/maven/goji/</url>
         </repository>
     </distributionManagement>
 
@@ -167,8 +137,8 @@
 
         <dependency>
             <groupId>commons-io</groupId>
-		    <artifactId>commons-io</artifactId>
-		    <version>2.5</version> <!-- 2.5 is the last version to support java 1.6 -->
+            <artifactId>commons-io</artifactId>
+            <version>2.5</version> <!-- 2.5 is the last version to support java 1.6 -->
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
