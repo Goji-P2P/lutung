@@ -3,23 +3,21 @@
  */
 package com.microtripit.mandrillapp.lutung.model;
 
-import org.apache.http.HttpEntity;
+import com.microtripit.mandrillapp.lutung.logging.Logger;
+import com.microtripit.mandrillapp.lutung.logging.LoggerFactory;
+import com.microtripit.mandrillapp.lutung.model.MandrillApiError.MandrillError;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 
-import com.microtripit.mandrillapp.lutung.logging.Logger;
-import com.microtripit.mandrillapp.lutung.logging.LoggerFactory;
-import com.microtripit.mandrillapp.lutung.model.MandrillApiError.MandrillError;
-
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
@@ -39,7 +37,8 @@ public final class MandrillRequestDispatcher {
 	 * A value of 0 means no timeout at all.
 	 * The value is expressed in milliseconds.
 	 * */
-	public static int SOCKET_TIMEOUT_MILLIS = 0;
+	public static String SOCKET_TIMEOUT_MILLIS = "mandrill.socket.timeout";
+	public static String SOCKET_TIMEOUT_MILLIS_DEFAULT = "5000";
 
 	/**
 	 * See https://hc.apache.org/httpcomponents-core-4.3.x/httpcore/apidocs/org/apache/http/params/HttpConnectionParams.html#setConnectionTimeout(org.apache.http.params.HttpParams, int)
@@ -47,24 +46,36 @@ public final class MandrillRequestDispatcher {
 	 * A value of 0 means no timeout at all.
 	 * The value is expressed in milliseconds.
 	 * */
-	public static int CONNECTION_TIMEOUT_MILLIS = 0;
+	public static String CONNECTION_TIMEOUT_MILLIS = "mandrill.connection.timeout";
+	public static String CONNECTION_TIMEOUT_MILLIS_DEFAULT = "5000";
+
+	public static String LINGER_TIMEOUT_MILLIS = "mandrill.socket.linger.timeout";
+	public static String LINGER_TIMEOUT_MILLIS_DEFAULT = "0";
 	
 	
-	private static CloseableHttpClient httpClient;
-	private static PoolingHttpClientConnectionManager connexionManager;
-	private static RequestConfig defaultRequestConfig;
+	private static final CloseableHttpClient httpClient;
 
 	static {
-		connexionManager = new PoolingHttpClientConnectionManager();
+		PoolingHttpClientConnectionManager connexionManager = new PoolingHttpClientConnectionManager();
 		connexionManager.setDefaultMaxPerRoute(50);
-		defaultRequestConfig = RequestConfig.custom()
-				.setSocketTimeout(SOCKET_TIMEOUT_MILLIS)
-				.setConnectTimeout(CONNECTION_TIMEOUT_MILLIS)
-				.setConnectionRequestTimeout(CONNECTION_TIMEOUT_MILLIS).build();
+		connexionManager.setDefaultSocketConfig(SocketConfig.copy(SocketConfig.DEFAULT)
+				.setSoLinger(getSystemProperty(LINGER_TIMEOUT_MILLIS, LINGER_TIMEOUT_MILLIS_DEFAULT))
+				.setSoTimeout(getSystemProperty(SOCKET_TIMEOUT_MILLIS, SOCKET_TIMEOUT_MILLIS_DEFAULT))
+				.build());
 		httpClient = HttpClients.custom().setUserAgent("/Lutung-0.1")
-				.setDefaultRequestConfig(defaultRequestConfig)
+				.setDefaultRequestConfig(RequestConfig
+						.custom()
+						.setSocketTimeout(getSystemProperty(SOCKET_TIMEOUT_MILLIS, SOCKET_TIMEOUT_MILLIS_DEFAULT))
+						.setConnectTimeout(getSystemProperty(CONNECTION_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_MILLIS_DEFAULT))
+						.setConnectionRequestTimeout(getSystemProperty(CONNECTION_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_MILLIS_DEFAULT)).build())
 				.setConnectionManager(connexionManager).useSystemProperties()
 				.build();
+	}
+
+
+	private static int getSystemProperty(String name, String defaultValue) {
+		String value = System.getProperty(name, defaultValue);
+		return Integer.parseInt(value);
 	}
 
 	public static final <T> T execute(final RequestModel<T> requestModel) throws MandrillApiError, IOException {
