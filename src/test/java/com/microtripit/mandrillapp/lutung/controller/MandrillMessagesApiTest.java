@@ -3,35 +3,19 @@
  */
 package com.microtripit.mandrillapp.lutung.controller;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-
-import org.junit.Assume;
-import org.junit.Test;
-
 import com.microtripit.mandrillapp.lutung.MandrillTestCase;
 import com.microtripit.mandrillapp.lutung.model.LutungGsonUtils;
 import com.microtripit.mandrillapp.lutung.model.MandrillApiError;
-import com.microtripit.mandrillapp.lutung.model.MandrillApiError.MandrillError;
-import com.microtripit.mandrillapp.lutung.view.MandrillMessage;
+import com.microtripit.mandrillapp.lutung.view.*;
 import com.microtripit.mandrillapp.lutung.view.MandrillMessage.Recipient;
 import com.microtripit.mandrillapp.lutung.view.MandrillMessage.Recipient.Type;
-import com.microtripit.mandrillapp.lutung.view.MandrillMessageContent;
-import com.microtripit.mandrillapp.lutung.view.MandrillMessageInfo;
 import com.microtripit.mandrillapp.lutung.view.MandrillMessageInfo.SMTPEvent;
-import com.microtripit.mandrillapp.lutung.view.MandrillMessageStatus;
-import com.microtripit.mandrillapp.lutung.view.MandrillSearchMessageParams;
-import com.microtripit.mandrillapp.lutung.view.MandrillTemplate;
-
 import junit.framework.Assert;
+import org.junit.Assume;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * <p>Tests for the messages api implementations.</p>
@@ -172,6 +156,20 @@ public final class MandrillMessagesApiTest extends MandrillTestCase {
 	public void testParse02() throws IOException, MandrillApiError {
 		MandrillMessage parsedMessage = mandrillApi.messages().parse(null);
 		Assert.fail();
+	}
+
+	@Test
+	public void testParse03_mutlipleValuesForSingleHeader() throws IOException, MandrillApiError {
+		String testUnparsedMsg =
+				"Return-Path: <me@googlemail.com>\n" +
+						"Received: from mail47.google.com\n" +
+						"Received: by mail47.google.com with SMTP id 123\n" +
+						"To: " + mailToAddress()+ "\n" +
+						"Subject: Lutung test subject\n\n" +
+						"Sup mandrill !";
+		MandrillMessage parsedMessage = mandrillApi.messages().parse(testUnparsedMsg);
+		Assume.assumeNotNull(parsedMessage);
+		Assert.assertEquals("Lutung test subject", parsedMessage.getSubject());
 	}
 	
 	@Test
