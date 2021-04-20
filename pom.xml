@@ -5,7 +5,7 @@
 
     <groupId>com.mandrillapp.wrapper.lutung</groupId>
     <artifactId>goji-lutung</artifactId>
-    <version>0.0.12</version>
+    <version>0.0.13</version>
     <name>goji-lutung</name>
     <description>Mandrill API Client for Java</description>
     <url>https://github.com/rschreijer/lutung</url>
