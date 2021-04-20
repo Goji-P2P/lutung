@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.microtripit.mandrillapp.lutung.model;
 
@@ -29,147 +29,147 @@ import java.util.List;
  * @since Feb 21, 2013
  */
 public final class MandrillRequestDispatcher {
-    private static final Logger log = LoggerFactory.getLogger(MandrillRequestDispatcher.class);
+  private static final Logger log = LoggerFactory.getLogger(MandrillRequestDispatcher.class);
 
-	/**
-	 * See https://hc.apache.org/httpcomponents-core-4.3.x/httpcore/apidocs/org/apache/http/params/HttpConnectionParams.html#setSoTimeout(org.apache.http.params.HttpParams, int)
-	 *
-	 * A value of 0 means no timeout at all.
-	 * The value is expressed in milliseconds.
-	 * */
-	public static String SOCKET_TIMEOUT_MILLIS = "mandrill.socket.timeout";
-	public static String SOCKET_TIMEOUT_MILLIS_DEFAULT = "5000";
+  /**
+   * See https://hc.apache.org/httpcomponents-core-4.3.x/httpcore/apidocs/org/apache/http/params/HttpConnectionParams.html#setSoTimeout(org.apache.http.params.HttpParams, int)
+   *
+   * A value of 0 means no timeout at all.
+   * The value is expressed in milliseconds.
+   * */
+  public static String SOCKET_TIMEOUT_MILLIS = "mandrill.socket.timeout";
+  public static String SOCKET_TIMEOUT_MILLIS_DEFAULT = "5000";
 
-	/**
-	 * See https://hc.apache.org/httpcomponents-core-4.3.x/httpcore/apidocs/org/apache/http/params/HttpConnectionParams.html#setConnectionTimeout(org.apache.http.params.HttpParams, int)
-	 *
-	 * A value of 0 means no timeout at all.
-	 * The value is expressed in milliseconds.
-	 * */
-	public static String CONNECTION_TIMEOUT_MILLIS = "mandrill.connection.timeout";
-	public static String CONNECTION_TIMEOUT_MILLIS_DEFAULT = "5000";
+  /**
+   * See https://hc.apache.org/httpcomponents-core-4.3.x/httpcore/apidocs/org/apache/http/params/HttpConnectionParams.html#setConnectionTimeout(org.apache.http.params.HttpParams, int)
+   *
+   * A value of 0 means no timeout at all.
+   * The value is expressed in milliseconds.
+   * */
+  public static String CONNECTION_TIMEOUT_MILLIS = "mandrill.connection.timeout";
+  public static String CONNECTION_TIMEOUT_MILLIS_DEFAULT = "5000";
 
-	public static String LINGER_TIMEOUT_MILLIS = "mandrill.socket.linger.timeout";
-	public static String LINGER_TIMEOUT_MILLIS_DEFAULT = "0";
-	
-	
-	private static final CloseableHttpClient httpClient;
-
-	static {
-		PoolingHttpClientConnectionManager connexionManager = new PoolingHttpClientConnectionManager();
-		connexionManager.setDefaultMaxPerRoute(50);
-		connexionManager.setDefaultSocketConfig(SocketConfig.copy(SocketConfig.DEFAULT)
-				.setSoLinger(getSystemProperty(LINGER_TIMEOUT_MILLIS, LINGER_TIMEOUT_MILLIS_DEFAULT))
-				.setSoTimeout(getSystemProperty(SOCKET_TIMEOUT_MILLIS, SOCKET_TIMEOUT_MILLIS_DEFAULT))
-				.build());
-		httpClient = HttpClients.custom().setUserAgent("/Lutung-0.1")
-				.setDefaultRequestConfig(RequestConfig
-						.custom()
-						.setSocketTimeout(getSystemProperty(SOCKET_TIMEOUT_MILLIS, SOCKET_TIMEOUT_MILLIS_DEFAULT))
-						.setConnectTimeout(getSystemProperty(CONNECTION_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_MILLIS_DEFAULT))
-						.setConnectionRequestTimeout(getSystemProperty(CONNECTION_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_MILLIS_DEFAULT)).build())
-				.setConnectionManager(connexionManager).useSystemProperties()
-				.build();
-	}
+  public static String LINGER_TIMEOUT_MILLIS = "mandrill.socket.linger.timeout";
+  public static String LINGER_TIMEOUT_MILLIS_DEFAULT = "0";
 
 
-	private static int getSystemProperty(String name, String defaultValue) {
-		String value = System.getProperty(name, defaultValue);
-		return Integer.parseInt(value);
-	}
+  private static final CloseableHttpClient httpClient;
 
-	public static final <T> T execute(final RequestModel<T> requestModel) throws MandrillApiError, IOException {
+  static {
+    PoolingHttpClientConnectionManager connexionManager = new PoolingHttpClientConnectionManager();
+    connexionManager.setDefaultMaxPerRoute(50);
+    connexionManager.setDefaultSocketConfig(SocketConfig.copy(SocketConfig.DEFAULT)
+      .setSoLinger(getSystemProperty(LINGER_TIMEOUT_MILLIS, LINGER_TIMEOUT_MILLIS_DEFAULT))
+      .setSoTimeout(getSystemProperty(SOCKET_TIMEOUT_MILLIS, SOCKET_TIMEOUT_MILLIS_DEFAULT))
+      .build());
+    httpClient = HttpClients.custom().setUserAgent("/Lutung-0.1")
+      .setDefaultRequestConfig(RequestConfig
+        .custom()
+        .setSocketTimeout(getSystemProperty(SOCKET_TIMEOUT_MILLIS, SOCKET_TIMEOUT_MILLIS_DEFAULT))
+        .setConnectTimeout(getSystemProperty(CONNECTION_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_MILLIS_DEFAULT))
+        .setConnectionRequestTimeout(getSystemProperty(CONNECTION_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_MILLIS_DEFAULT)).build())
+      .setConnectionManager(connexionManager).useSystemProperties()
+      .build();
+  }
 
-		HttpResponse response = null;
-		String responseString = null;
-		try {
-			// use proxy?
-			final ProxyData proxyData = detectProxyServer(requestModel.getUrl());
-			if (proxyData != null) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Using proxy @" + proxyData.host
-							+ ":" + String.valueOf(proxyData.port)));
-				}
-				final HttpHost proxy = new HttpHost(proxyData.host,
-						proxyData.port);
-				httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY,
-						proxy);
-			}
-            log.debug("starting request '" +requestModel.getUrl()+ "'");
-			response = httpClient.execute( requestModel.getRequest() );
-			final StatusLine status = response.getStatusLine();
-			responseString = EntityUtils.toString(response.getEntity());
-			if( requestModel.validateResponseStatus(status.getStatusCode()) ) {
-				try {
-					return requestModel.handleResponse( responseString );
-					
-				} catch(final HandleResponseException e) {
-					throw new IOException(
-							"Failed to parse response from request '" 
-							+requestModel.getUrl()+ "'", e);
-					
-				}
-				
-			} else {
-				// ==> compile mandrill error!
-				MandrillError error = null;
-				try {
-				    error = LutungGsonUtils.getGson()
-						.fromJson(responseString, MandrillError.class);
-				} catch (Throwable ex) {
-				    error = new MandrillError("Invalid Error Format",
-				                              "Invalid Error Format",
-				                              responseString,
-				                              status.getStatusCode());
-				}
+  private static int getSystemProperty(String name, String defaultValue) {
+    String value = System.getProperty(name, defaultValue);
+    return Integer.parseInt(value);
+  }
 
-				throw new MandrillApiError(
-						"Unexpected http status in response: " 
-						+status.getStatusCode()+ " (" 
-						+status.getReasonPhrase()+ ")").withError(error);
-				
-			}
-				
-		} finally {
-			try {
-				EntityUtils.consume(response.getEntity());
-			} catch (IOException e) {
-				log.error("Error consuming entity", e);
-				throw e;
-			}
-		}
-	}
+  public static final <T> T execute(final RequestModel<T> requestModel) throws MandrillApiError, IOException {
 
-    private static final ProxyData detectProxyServer(final String url) {
+    HttpResponse response = null;
+    String responseString;
+    try {
+      // use proxy?
+      final ProxyData proxyData = detectProxyServer(requestModel.getUrl());
+      if (proxyData != null) {
+
+        if (log.isDebugEnabled()) {
+          log.debug("Using proxy @" + proxyData.host
+            + ":" + proxyData.port);
+        }
+
+        final HttpHost proxy = new HttpHost(proxyData.host, proxyData.port);
+        httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
+      }
+
+      log.debug("starting request '" + requestModel.getUrl() + "'");
+      response = httpClient.execute(requestModel.getRequest());
+
+      final StatusLine status = response.getStatusLine();
+      responseString = EntityUtils.toString(response.getEntity());
+      if (requestModel.validateResponseStatus(status.getStatusCode())) {
         try {
-            final List<Proxy> proxies = ProxySelector.getDefault().select(new URI(url));
-            if(proxies != null) {
-                for(Proxy proxy : proxies) {
-                    InetSocketAddress addr = (InetSocketAddress) proxy.address();
-                    if(addr != null) {
-                        return new ProxyData(addr.getHostName(), addr.getPort());
-                    }
-                }
-            }
-            // no proxy detected!
-            return null;
-
-        } catch (final Throwable t) {
-            log.error("Error detecting proxy server", t);
-            return null;
-
-        }
-    }
-
-    private static final class ProxyData {
-        String host;
-        int port;
-
-        protected ProxyData(final String host, final int port) {
-            this.host = host;
-            this.port = port;
+          return requestModel.handleResponse(responseString);
+        } catch (final HandleResponseException e) {
+          throw new IOException("Failed to parse response from request '" + requestModel.getUrl() + "'", e);
         }
 
+      } else {
+        // ==> compile mandrill error!
+        MandrillError error = null;
+        try {
+          error = LutungGsonUtils.getGson()
+            .fromJson(responseString, MandrillError.class);
+        } catch (Throwable ex) {
+          error = new MandrillError("Invalid Error Format",
+            "Invalid Error Format",
+            responseString,
+            status.getStatusCode());
+        }
+
+        throw new MandrillApiError(
+          "Unexpected http status in response: "
+            + status.getStatusCode() + " ("
+            + status.getReasonPhrase() + ")").withError(error);
+
+      }
+
+    } finally {
+      try {
+        // response can be null if the call to mandrill encounters a timeout
+        if (response != null) {
+          EntityUtils.consume(response.getEntity());
+        }
+      } catch (IOException e) {
+        log.error("Error consuming entity", e);
+        throw e;
+      }
     }
+  }
+
+  private static final ProxyData detectProxyServer(final String url) {
+    try {
+      final List<Proxy> proxies = ProxySelector.getDefault().select(new URI(url));
+      if (proxies != null) {
+        for (Proxy proxy : proxies) {
+          InetSocketAddress addr = (InetSocketAddress) proxy.address();
+          if (addr != null) {
+            return new ProxyData(addr.getHostName(), addr.getPort());
+          }
+        }
+      }
+      // no proxy detected!
+      return null;
+
+    } catch (final Throwable t) {
+      log.error("Error detecting proxy server", t);
+      return null;
+
+    }
+  }
+
+  private static final class ProxyData {
+    String host;
+    int port;
+
+    protected ProxyData(final String host, final int port) {
+      this.host = host;
+      this.port = port;
+    }
+
+  }
 
 }
